@@ -1,13 +1,10 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { BASE_URL } from './constants/index.js';
-import { readFile, writeFile } from 'fs/promises';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
+import { getFileData, writeFileData } from './processFileData.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const FILE_PATH = join(__dirname, '../storage/filteredRecordData.json');
+const FILE_PATH = join(process.cwd(), 'storage/filteredRecordData.json');
 
 export async function scrapeLinks(url) {
   try {
@@ -30,7 +27,7 @@ export async function scrapeLinks(url) {
       .get()
       .filter(Boolean);
   } catch (error) {
-    console.error('Scraping error:', error.message);
+    console.error('Scraping error', error?.response?.data || error?.message);
     return [];
   }
 }
@@ -45,15 +42,18 @@ export async function fetchPages(links, batchSize = 5) {
 
     const responses = await Promise.allSettled(batch.map(link => axios.get(link).then(res => res.data)));
 
-    temp.push(...responses.map(res => (res.status === 'fulfilled' ? res.value : `Error: ${res.reason}`)));
+    temp.push(
+      ...responses.map((res, i) => {
+        return res.status === 'fulfilled' ? res.value : `Error: ${res.reason}`;
+      }),
+    );
 
     // Optional delay to avoid rate-limiting
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   const tempIdx = [];
-  const rawJsonRecordData = await readFile(FILE_PATH, 'utf-8');
-  const jsonRecordData = JSON.parse(rawJsonRecordData || '{}');
+  const jsonRecordData = await getFileData(FILE_PATH);
 
   const filteredTemp = temp.filter((item, index) => {
     const $ = cheerio.load(item);
@@ -75,11 +75,13 @@ export async function fetchPages(links, batchSize = 5) {
       }
     }
 
-    jsonRecordData[links[index]] = true;
+    if (item.length > 0) {
+      jsonRecordData[links[index]] = true;
+    }
     return false;
   });
 
-  await writeFile(FILE_PATH, JSON.stringify(jsonRecordData, null, 2), 'utf-8');
+  await writeFileData(FILE_PATH, jsonRecordData);
 
   const results = filteredTemp.map((item, index) => {
     const $ = cheerio.load(item);

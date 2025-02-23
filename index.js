@@ -1,14 +1,11 @@
 import { scrapeLinks, fetchPages } from './src/scraper.js';
 import { BASE_URL } from './src/constants/index.js';
-import { readFile } from 'fs/promises';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
+import { getFileData } from './src/processFileData.js';
 
 const URL = `${BASE_URL}/?id=8&nr=1&page=15`;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const FILE_PATH = join(__dirname, './storage/filteredRecordData.json');
+const FILE_PATH = join(process.cwd(), 'storage/filteredRecordData.json');
 
 (async () => {
   const links = await scrapeLinks(URL);
@@ -18,9 +15,15 @@ const FILE_PATH = join(__dirname, './storage/filteredRecordData.json');
     return;
   }
 
-  const rawJsonRecordData = await readFile(FILE_PATH, 'utf8');
-  const jsonRecordData = JSON.parse(rawJsonRecordData || '{}');
-  const tempBatch = links.filter(item => !jsonRecordData[item]);
+  const isFetchingFromScratch = true;
+  let tempBatch = [];
+
+  if (isFetchingFromScratch) {
+    tempBatch = links;
+  } else {
+    const jsonRecordData = await getFileData(FILE_PATH);
+    tempBatch = links.filter(item => !jsonRecordData[item]);
+  }
 
   console.log(`Found ${tempBatch.length} necessary links, starting batch requests...`);
 
