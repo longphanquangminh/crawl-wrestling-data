@@ -44,6 +44,9 @@ export async function fetchPages(links, batchSize = 5) {
 
     temp.push(
       ...responses.map((res, i) => {
+        if (i === 0) {
+          console.log(res);
+        }
         return res.status === 'fulfilled' ? res.value : `Error: ${res.reason}`;
       }),
     );
