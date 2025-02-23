@@ -15,7 +15,9 @@ const FILE_PATH = join(process.cwd(), 'storage/filteredRecordData.json');
     return;
   }
 
-  const isFetchingFromScratch = true;
+  const args = process.argv.slice(2);
+
+  const isFetchingFromScratch = args.includes('--from-scratch');
   let tempBatch = [];
 
   if (isFetchingFromScratch) {
