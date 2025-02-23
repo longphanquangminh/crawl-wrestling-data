@@ -45,7 +45,7 @@ export async function fetchPages(links, batchSize = 5) {
     temp.push(
       ...responses.map((res, i) => {
         if (i === 0) {
-          console.log(res);
+          console.log({ ...res, value: `${res.value.slice(0, 100)}...` });
         }
         return res.status === 'fulfilled' ? res.value : `Error: ${res.reason}`;
       }),
