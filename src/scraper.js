@@ -56,7 +56,16 @@ export async function fetchPages(links, batchSize = 5) {
   }
 
   const tempIdx = [];
-  const jsonRecordData = await getFileData(FILE_PATH);
+
+  const args = process.argv.slice(2);
+
+  const isFetchingFromScratch = args.includes('--from-scratch');
+
+  let jsonRecordData = {};
+
+  if (!isFetchingFromScratch) {
+    jsonRecordData = await getFileData(FILE_PATH);
+  }
 
   const filteredTemp = temp.filter((item, index) => {
     const $ = cheerio.load(item);
